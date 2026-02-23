@@ -50,8 +50,7 @@ export async function getConferenceRecordsBySpace(
   });
 
   return {
-    conferenceRecords: (res.data.conferenceRecords ||
-      []) as unknown as ConferenceRecord[],
+    conferenceRecords: (res.data.conferenceRecords || []) as ConferenceRecord[],
     nextPageToken: res.data.nextPageToken || undefined,
   };
 }
@@ -64,7 +63,7 @@ export async function getConferenceRecord(
   const res = await meet.conferenceRecords.get({
     name: recordName,
   });
-  return res.data as unknown as ConferenceRecord;
+  return res.data as ConferenceRecord;
 }
 
 export async function getParticipants(
@@ -76,7 +75,7 @@ export async function getParticipants(
     parent: recordName,
   });
   return {
-    participants: (res.data.participants || []) as unknown as Participant[],
+    participants: (res.data.participants || []) as Participant[],
     nextPageToken: res.data.nextPageToken || undefined,
   };
 }
@@ -95,7 +94,7 @@ export async function getParticipantSessions(
     });
   return {
     participantSessions: (res.data.participantSessions ||
-      []) as unknown as ParticipantSession[],
+      []) as ParticipantSession[],
     nextPageToken: res.data.nextPageToken || undefined,
   };
 }
