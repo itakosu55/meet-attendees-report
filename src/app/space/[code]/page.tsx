@@ -1,5 +1,7 @@
-import { getCurrentUser } from "@/lib/auth";
-import { getConferenceRecordsBySpace } from "@/lib/meet";
+import { getCurrentUser } from "@/infra/auth";
+import { MeetService } from "@/application/meet-service";
+import { MeetRepository } from "@/infra/meet-repo";
+import { ConferenceRecord } from "@/domain/meet";
 import { redirect } from "next/navigation";
 import {
   Card,
@@ -33,7 +35,9 @@ export default async function SpacePage({
 
   let records = [];
   try {
-    const response = await getConferenceRecordsBySpace(
+    const meetRepo = new MeetRepository();
+    const meetService = new MeetService(meetRepo);
+    const response = await meetService.getConferenceRecordsBySpace(
       code,
       user.googleAccessToken,
     );
@@ -90,7 +94,7 @@ export default async function SpacePage({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {records.map((record) => {
+                  {records.map((record: ConferenceRecord) => {
                     const id = record.name.replace("conferenceRecords/", "");
                     return (
                       <TableRow key={record.name}>

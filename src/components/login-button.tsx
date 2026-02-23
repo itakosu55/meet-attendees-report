@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-import { auth } from "@/lib/firebase/client";
+import { auth } from "@/infra/firebase/client";
 import { Button } from "@/components/ui/button";
 import { setSessionCookie } from "@/app/actions/auth";
 import { useRouter } from "next/navigation";

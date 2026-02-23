@@ -1,4 +1,4 @@
-import { adminAuth } from "@/lib/firebase/admin";
+import { adminAuth } from "@/infra/firebase/admin";
 import { getSessionCookie } from "@/app/actions/auth";
 
 export async function getCurrentUser() {

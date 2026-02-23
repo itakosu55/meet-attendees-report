@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Participant, ParticipantSession } from "@/lib/meet";
+import { Participant, ParticipantSession } from "@/domain/meet";
 import { Card, CardContent } from "@/components/ui/card";
 import { format, parseISO, differenceInMinutes } from "date-fns";
 

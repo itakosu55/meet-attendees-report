@@ -1,13 +1,11 @@
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser } from "@/infra/auth";
+import { MeetRepository } from "@/infra/meet-repo";
+import { MeetService } from "@/application/meet-service";
 import {
   ConferenceRecord,
-  getConferenceRecord,
-  getParticipants,
-  getParticipantSessions,
-  getSpace,
   Participant,
   ParticipantSession,
-} from "@/lib/meet";
+} from "@/domain/meet";
 import { redirect } from "next/navigation";
 import {
   Card,
@@ -33,46 +31,21 @@ export default async function MeetingPage({
   }
 
   const accessToken = user.googleAccessToken;
-  const recordName = `conferenceRecords/${id}`;
 
-  let record: ConferenceRecord;
+  let record: ConferenceRecord | null = null;
   let participants: Participant[] = [];
   let allSessions: ParticipantSession[] = [];
   let spaceCode = "";
-  let meetingCodeForDisplay = "";
 
   try {
-    record = await getConferenceRecord(recordName, accessToken);
+    const meetRepo = new MeetRepository();
+    const meetService = new MeetService(meetRepo);
+    const details = await meetService.getMeetingDetails(id, accessToken);
 
-    // Fetch space details to get the human-readable meeting code
-    if (record.space) {
-      try {
-        const spaceDetails = await getSpace(record.space, accessToken);
-        // Sometimes meetingCode might be undefined if it expired, fallback to the raw space ID
-        meetingCodeForDisplay =
-          spaceDetails.meetingCode || record.space.replace("spaces/", "");
-      } catch (spaceErr) {
-        console.warn("Could not fetch space details:", spaceErr);
-        meetingCodeForDisplay = record.space.replace("spaces/", "");
-      }
-    } else {
-      meetingCodeForDisplay = id;
-    }
-
-    spaceCode = meetingCodeForDisplay;
-
-    // Fetch all participants
-    const response = await getParticipants(recordName, accessToken);
-    participants = response.participants || [];
-
-    // Fetch sessions for all participants concurrently
-    const allSessionsPromises = participants.map(async (p) => {
-      const res = await getParticipantSessions(p.name, accessToken);
-      return res.participantSessions || [];
-    });
-
-    const sessionsNested = await Promise.all(allSessionsPromises);
-    allSessions = sessionsNested.flat();
+    record = details.record;
+    spaceCode = details.spaceCode;
+    participants = details.participants;
+    allSessions = details.allSessions;
   } catch (error) {
     console.error("Failed to fetch meeting details:", error);
     return (
@@ -115,12 +88,16 @@ export default async function MeetingPage({
           <CardHeader>
             <CardTitle>タイムライン</CardTitle>
             <CardDescription>
-              {new Date(record.startTime).toLocaleString("ja-JP")} 〜{" "}
-              {new Date(record.endTime).toLocaleString("ja-JP")}
+              {record && (
+                <>
+                  {new Date(record.startTime).toLocaleString("ja-JP")} 〜{" "}
+                  {new Date(record.endTime).toLocaleString("ja-JP")}
+                </>
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {participants.length === 0 ? (
+            {participants.length === 0 || !record ? (
               <p>参加者データが見つかりませんでした。</p>
             ) : (
               <MeetingTimeline
