@@ -1,11 +1,6 @@
 import { getCurrentUser } from "@/infra/auth";
 import { MeetRepository } from "@/infra/meet-repo";
 import { MeetService } from "@/application/meet-service";
-import {
-  ConferenceRecord,
-  Participant,
-  ParticipantSession,
-} from "@/domain/meet";
 import { redirect } from "next/navigation";
 import {
   Card,
@@ -32,22 +27,12 @@ export default async function MeetingPage({
 
   const accessToken = user.googleAccessToken;
 
-  let record: ConferenceRecord | null = null;
-  let participants: Participant[] = [];
-  let allSessions: ParticipantSession[] = [];
-  let spaceCode = "";
+  const meetRepo = new MeetRepository();
+  const meetService = new MeetService(meetRepo);
+  const result = await meetService.getMeetingDetails(id, accessToken);
 
-  try {
-    const meetRepo = new MeetRepository();
-    const meetService = new MeetService(meetRepo);
-    const details = await meetService.getMeetingDetails(id, accessToken);
-
-    record = details.record;
-    spaceCode = details.spaceCode;
-    participants = details.participants;
-    allSessions = details.allSessions;
-  } catch (error) {
-    console.error("Failed to fetch meeting details:", error);
+  if (result.isErr()) {
+    console.error("Failed to fetch meeting details:", result.error);
     return (
       <main className="p-10">
         <Card>
@@ -66,6 +51,8 @@ export default async function MeetingPage({
       </main>
     );
   }
+
+  const { record, spaceCode, participants, allSessions } = result.value;
 
   return (
     <main className="min-h-screen bg-zinc-50 dark:bg-zinc-950 py-10 px-4 sm:px-6 lg:px-8">

@@ -1,66 +1,94 @@
-import { IMeetRepository } from "@/domain/meet";
+import {
+  IMeetRepository,
+  ConferenceRecord,
+  Participant,
+  ParticipantSession,
+  MeetApiError,
+  SpaceNotFoundError,
+} from "@/domain/meet";
+import { ResultAsync, okAsync } from "neverthrow";
+
+export interface MeetingDetailsResult {
+  record: ConferenceRecord;
+  spaceCode: string;
+  participants: Participant[];
+  allSessions: ParticipantSession[];
+}
 
 export class MeetService {
   constructor(private readonly meetRepository: IMeetRepository) {}
 
-  async getConferenceRecordsBySpace(spaceCode: string, accessToken: string) {
+  getConferenceRecordsBySpace(spaceCode: string, accessToken: string) {
     return this.meetRepository.getConferenceRecordsBySpace(
       spaceCode,
       accessToken,
     );
   }
 
-  async getMeetingDetails(id: string, accessToken: string) {
+  getMeetingDetails(
+    id: string,
+    accessToken: string,
+  ): ResultAsync<MeetingDetailsResult, MeetApiError | SpaceNotFoundError> {
     const recordName = `conferenceRecords/${id}`;
 
-    const record = await this.meetRepository.getConferenceRecord(
-      recordName,
-      accessToken,
-    );
-
-    let spaceCode = "";
-    const meetingCodeForDisplay = id; // Initialize with id as a fallback
-
-    // Fetch space details to get the human-readable meeting code
-    if (record.space) {
-      try {
-        const spaceDetails = await this.meetRepository.getSpace(
-          record.space,
-          accessToken,
+    return this.meetRepository
+      .getConferenceRecord(recordName, accessToken)
+      .andThen((record) => {
+        return this.resolveSpaceCode(record, accessToken).map((spaceCode) => ({
+          record,
+          spaceCode,
+        }));
+      })
+      .andThen(({ record, spaceCode }) => {
+        return this.meetRepository
+          .getParticipants(recordName, accessToken)
+          .map((res) => ({
+            record,
+            spaceCode,
+            participants: res.participants,
+          }));
+      })
+      .andThen(({ record, spaceCode, participants }) => {
+        const sessionPromises = participants.map((p) =>
+          this.meetRepository.getParticipantSessions(p.name, accessToken).match(
+            (res) => res.participantSessions,
+            () => [], // 一部のセッション取得失敗が全体の失敗にならないようにフォールバック
+          ),
         );
-        // Sometimes meetingCode might be undefined if it expired, fallback to the raw space ID
-        spaceCode =
-          spaceDetails.meetingCode || record.space.replace("spaces/", "");
-      } catch (spaceErr) {
-        console.warn("Could not fetch space details:", spaceErr);
-        // If fetching space details fails, fallback to the raw space ID
-        spaceCode = record.space.replace("spaces/", "");
-      }
-    } else {
-      spaceCode = meetingCodeForDisplay;
+
+        return ResultAsync.fromPromise(
+          Promise.all(sessionPromises),
+          (error) =>
+            new MeetApiError("Failed to fetch participant sessions", error),
+        ).map((sessionsNested) => ({
+          record,
+          spaceCode,
+          participants,
+          allSessions: sessionsNested.flat(),
+        }));
+      });
+  }
+
+  private resolveSpaceCode(
+    record: ConferenceRecord,
+    accessToken: string,
+  ): ResultAsync<string, never> {
+    // Spaceコードの特定失敗は致命的エラーにはしない
+    const fallbackSpaceCode = record.space
+      ? record.space.replace("spaces/", "")
+      : "";
+
+    if (!record.space) {
+      return okAsync("");
     }
 
-    const { participants } = await this.meetRepository.getParticipants(
-      recordName,
-      accessToken,
-    );
-
-    const allSessionsPromises = participants.map(async (p) => {
-      const res = await this.meetRepository.getParticipantSessions(
-        p.name,
-        accessToken,
+    const matchPromise = this.meetRepository
+      .getSpace(record.space, accessToken)
+      .match(
+        (spaceDetails) => spaceDetails.meetingCode || fallbackSpaceCode,
+        () => fallbackSpaceCode,
       );
-      return res.participantSessions || [];
-    });
-
-    const sessionsNested = await Promise.all(allSessionsPromises);
-    const allSessions = sessionsNested.flat();
-
-    return {
-      record,
-      spaceCode,
-      participants,
-      allSessions,
-    };
+    // Promiseで解決される結果をResultAsyncとしてラップし直す
+    return ResultAsync.fromPromise(matchPromise, () => undefined as never);
   }
 }

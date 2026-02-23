@@ -4,7 +4,10 @@ import {
   IMeetRepository,
   Participant,
   ParticipantSession,
+  MeetApiError,
+  SpaceNotFoundError,
 } from "@/domain/meet";
+import { ResultAsync } from "neverthrow";
 
 export class MeetRepository implements IMeetRepository {
   private getMeetClient(accessToken: string) {
@@ -13,77 +16,116 @@ export class MeetRepository implements IMeetRepository {
     return google.meet({ version: "v2", auth });
   }
 
-  async getConferenceRecordsBySpace(
+  getConferenceRecordsBySpace(
     spaceCode: string,
     accessToken: string,
-  ): Promise<{
-    conferenceRecords: ConferenceRecord[];
-    nextPageToken?: string;
-  }> {
+  ): ResultAsync<
+    {
+      conferenceRecords: ConferenceRecord[];
+      nextPageToken?: string;
+    },
+    MeetApiError
+  > {
     const meet = this.getMeetClient(accessToken);
-    const res = await meet.conferenceRecords.list({
-      filter: `space.meeting_code="${spaceCode}"`,
-    });
-
-    return {
+    return ResultAsync.fromPromise(
+      meet.conferenceRecords.list({
+        filter: `space.meeting_code="${spaceCode}"`,
+      }),
+      (error) => new MeetApiError("Failed to list conference records", error),
+    ).map((res) => ({
       conferenceRecords: (res.data.conferenceRecords ||
         []) as ConferenceRecord[],
       nextPageToken: res.data.nextPageToken || undefined,
-    };
+    }));
   }
 
-  async getConferenceRecord(
+  getConferenceRecord(
     recordName: string,
     accessToken: string,
-  ): Promise<ConferenceRecord> {
+  ): ResultAsync<ConferenceRecord, MeetApiError> {
     const meet = this.getMeetClient(accessToken);
-    const res = await meet.conferenceRecords.get({
-      name: recordName,
-    });
-    return res.data as ConferenceRecord;
+    return ResultAsync.fromPromise(
+      meet.conferenceRecords.get({
+        name: recordName,
+      }),
+      (error) =>
+        new MeetApiError(
+          `Failed to get conference record: ${recordName}`,
+          error,
+        ),
+    ).map((res) => res.data as ConferenceRecord);
   }
 
-  async getParticipants(
+  getParticipants(
     recordName: string,
     accessToken: string,
-  ): Promise<{ participants: Participant[]; nextPageToken?: string }> {
+  ): ResultAsync<
+    { participants: Participant[]; nextPageToken?: string },
+    MeetApiError
+  > {
     const meet = this.getMeetClient(accessToken);
-    const res = await meet.conferenceRecords.participants.list({
-      parent: recordName,
-    });
-    return {
+    return ResultAsync.fromPromise(
+      meet.conferenceRecords.participants.list({
+        parent: recordName,
+      }),
+      (error) =>
+        new MeetApiError(
+          `Failed to get participants for: ${recordName}`,
+          error,
+        ),
+    ).map((res) => ({
       participants: (res.data.participants || []) as Participant[],
       nextPageToken: res.data.nextPageToken || undefined,
-    };
+    }));
   }
 
-  async getParticipantSessions(
+  getParticipantSessions(
     participantName: string,
     accessToken: string,
-  ): Promise<{
-    participantSessions: ParticipantSession[];
-    nextPageToken?: string;
-  }> {
+  ): ResultAsync<
+    {
+      participantSessions: ParticipantSession[];
+      nextPageToken?: string;
+    },
+    MeetApiError
+  > {
     const meet = this.getMeetClient(accessToken);
-    const res =
-      await meet.conferenceRecords.participants.participantSessions.list({
+    return ResultAsync.fromPromise(
+      meet.conferenceRecords.participants.participantSessions.list({
         parent: participantName,
-      });
-    return {
+      }),
+      (error) =>
+        new MeetApiError(
+          `Failed to get sessions for participant: ${participantName}`,
+          error,
+        ),
+    ).map((res) => ({
       participantSessions: (res.data.participantSessions ||
         []) as ParticipantSession[],
       nextPageToken: res.data.nextPageToken || undefined,
-    };
+    }));
   }
 
-  async getSpace(
+  getSpace(
     spaceName: string,
     accessToken: string,
-  ): Promise<{ name: string; meetingCode?: string }> {
+  ): ResultAsync<
+    { name: string; meetingCode?: string },
+    MeetApiError | SpaceNotFoundError
+  > {
     const meet = this.getMeetClient(accessToken);
-    const res = await meet.spaces.get({
-      name: spaceName,
-    });
-    return res.data as { name: string; meetingCode?: string };
+    return ResultAsync.fromPromise(
+      meet.spaces.get({
+        name: spaceName,
+      }),
+      (error: unknown) => {
+        // googleapisのエラー形式に応じて判定
+        const err = error as { code?: number };
+        if (err.code === 404) {
+          return new SpaceNotFoundError(`Space not found: ${spaceName}`, error);
+        }
+        return new MeetApiError(`Failed to get space: ${spaceName}`, error);
+      },
+    ).map((res) => res.data as { name: string; meetingCode?: string });
   }
 }

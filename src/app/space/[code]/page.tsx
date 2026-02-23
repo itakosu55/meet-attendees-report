@@ -33,17 +33,15 @@ export default async function SpacePage({
     redirect("/");
   }
 
-  let records = [];
-  try {
-    const meetRepo = new MeetRepository();
-    const meetService = new MeetService(meetRepo);
-    const response = await meetService.getConferenceRecordsBySpace(
-      code,
-      user.googleAccessToken,
-    );
-    records = response.conferenceRecords || [];
-  } catch (error) {
-    console.error("Failed to fetch conference records:", error);
+  const meetRepo = new MeetRepository();
+  const meetService = new MeetService(meetRepo);
+  const result = await meetService.getConferenceRecordsBySpace(
+    code,
+    user.googleAccessToken,
+  );
+
+  if (result.isErr()) {
+    console.error("Failed to fetch conference records:", result.error);
     return (
       <main className="p-10">
         <Card>
@@ -61,6 +59,8 @@ export default async function SpacePage({
       </main>
     );
   }
+
+  const records = result.value.conferenceRecords || [];
 
   return (
     <main className="min-h-screen bg-zinc-50 dark:bg-zinc-950 py-10 px-4 sm:px-6 lg:px-8">
