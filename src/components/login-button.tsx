@@ -13,6 +13,13 @@ export function LoginButton() {
   const router = useRouter();
 
   const handleLogin = async () => {
+    if (!auth) {
+      alert(
+        "Firebase が初期化されていません。環境変数 (NEXT_PUBLIC_FIREBASE_API_KEY 等) が正しく設定されているか確認してください。",
+      );
+      return;
+    }
+
     setIsLoading(true);
     try {
       const provider = new GoogleAuthProvider();

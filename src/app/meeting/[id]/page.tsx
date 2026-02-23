@@ -1,10 +1,12 @@
 import { getCurrentUser } from "@/lib/auth";
 import {
+  ConferenceRecord,
   getConferenceRecord,
   getParticipants,
   getParticipantSessions,
   getSpace,
   Participant,
+  ParticipantSession,
 } from "@/lib/meet";
 import { redirect } from "next/navigation";
 import {
@@ -33,9 +35,9 @@ export default async function MeetingPage({
   const accessToken = user.googleAccessToken;
   const recordName = `conferenceRecords/${id}`;
 
-  let record;
+  let record: ConferenceRecord;
   let participants: Participant[] = [];
-  let allSessions = [];
+  let allSessions: ParticipantSession[] = [];
   let spaceCode = "";
   let meetingCodeForDisplay = "";
 

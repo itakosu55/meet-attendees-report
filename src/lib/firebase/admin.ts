@@ -17,9 +17,7 @@ if (isFirebaseAdminInitialized && !admin.apps.length) {
   }
 }
 
-export const adminAuth = isFirebaseAdminInitialized
-  ? admin.auth()
-  : (null as unknown as ReturnType<typeof admin.auth>);
-export const adminDb = isFirebaseAdminInitialized
-  ? admin.firestore()
-  : (null as unknown as ReturnType<typeof admin.firestore>);
+const isFirebaseAdminReady = isFirebaseAdminInitialized && !!admin.apps.length;
+
+export const adminAuth = isFirebaseAdminReady ? admin.auth() : undefined;
+export const adminDb = isFirebaseAdminReady ? admin.firestore() : undefined;

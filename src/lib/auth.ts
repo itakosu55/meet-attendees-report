@@ -4,7 +4,12 @@ import { getSessionCookie } from "@/app/actions/auth";
 export async function getCurrentUser() {
   const { session, accessToken } = await getSessionCookie();
 
-  if (!session) {
+  if (!session || !adminAuth) {
+    if (session && !adminAuth) {
+      console.error(
+        "Session exists but adminAuth is not initialized. Check FIREBASE_PROJECT_ID etc.",
+      );
+    }
     return null;
   }
 

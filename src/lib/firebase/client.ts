@@ -17,10 +17,8 @@ const app = isFirebaseInitialized
   ? getApps().length > 0
     ? getApp()
     : initializeApp(firebaseConfig)
-  : (null as unknown as ReturnType<typeof initializeApp>);
+  : undefined;
 
-const auth = isFirebaseInitialized
-  ? getAuth(app)
-  : (null as unknown as ReturnType<typeof getAuth>);
+const auth = isFirebaseInitialized && app ? getAuth(app) : undefined;
 
 export { app, auth };
