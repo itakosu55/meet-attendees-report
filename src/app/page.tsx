@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser } from "@/infra/auth";
 import { LoginButton } from "@/components/login-button";
 import { SpaceForm } from "@/components/space-form";
 import { clearSessionCookie } from "@/app/actions/auth";

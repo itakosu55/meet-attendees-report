@@ -1,13 +1,6 @@
-import { getCurrentUser } from "@/lib/auth";
-import {
-  ConferenceRecord,
-  getConferenceRecord,
-  getParticipants,
-  getParticipantSessions,
-  getSpace,
-  Participant,
-  ParticipantSession,
-} from "@/lib/meet";
+import { getCurrentUser } from "@/infra/auth";
+import { MeetRepository } from "@/infra/meet-repo";
+import { MeetService } from "@/application/meet-service";
 import { redirect } from "next/navigation";
 import {
   Card,
@@ -33,48 +26,13 @@ export default async function MeetingPage({
   }
 
   const accessToken = user.googleAccessToken;
-  const recordName = `conferenceRecords/${id}`;
 
-  let record: ConferenceRecord;
-  let participants: Participant[] = [];
-  let allSessions: ParticipantSession[] = [];
-  let spaceCode = "";
-  let meetingCodeForDisplay = "";
+  const meetRepo = new MeetRepository();
+  const meetService = new MeetService(meetRepo);
+  const result = await meetService.getMeetingDetails(id, accessToken);
 
-  try {
-    record = await getConferenceRecord(recordName, accessToken);
-
-    // Fetch space details to get the human-readable meeting code
-    if (record.space) {
-      try {
-        const spaceDetails = await getSpace(record.space, accessToken);
-        // Sometimes meetingCode might be undefined if it expired, fallback to the raw space ID
-        meetingCodeForDisplay =
-          spaceDetails.meetingCode || record.space.replace("spaces/", "");
-      } catch (spaceErr) {
-        console.warn("Could not fetch space details:", spaceErr);
-        meetingCodeForDisplay = record.space.replace("spaces/", "");
-      }
-    } else {
-      meetingCodeForDisplay = id;
-    }
-
-    spaceCode = meetingCodeForDisplay;
-
-    // Fetch all participants
-    const response = await getParticipants(recordName, accessToken);
-    participants = response.participants || [];
-
-    // Fetch sessions for all participants concurrently
-    const allSessionsPromises = participants.map(async (p) => {
-      const res = await getParticipantSessions(p.name, accessToken);
-      return res.participantSessions || [];
-    });
-
-    const sessionsNested = await Promise.all(allSessionsPromises);
-    allSessions = sessionsNested.flat();
-  } catch (error) {
-    console.error("Failed to fetch meeting details:", error);
+  if (result.isErr()) {
+    console.error("Failed to fetch meeting details:", result.error);
     return (
       <main className="p-10">
         <Card>
@@ -93,6 +51,8 @@ export default async function MeetingPage({
       </main>
     );
   }
+
+  const { record, spaceCode, participants, allSessions } = result.value;
 
   return (
     <main className="min-h-screen bg-zinc-50 dark:bg-zinc-950 py-10 px-4 sm:px-6 lg:px-8">

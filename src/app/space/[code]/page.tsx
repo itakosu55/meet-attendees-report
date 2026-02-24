@@ -1,5 +1,6 @@
-import { getCurrentUser } from "@/lib/auth";
-import { getConferenceRecordsBySpace } from "@/lib/meet";
+import { getCurrentUser } from "@/infra/auth";
+import { MeetService } from "@/application/meet-service";
+import { MeetRepository } from "@/infra/meet-repo";
 import { redirect } from "next/navigation";
 import {
   Card,
@@ -31,15 +32,15 @@ export default async function SpacePage({
     redirect("/");
   }
 
-  let records = [];
-  try {
-    const response = await getConferenceRecordsBySpace(
-      code,
-      user.googleAccessToken,
-    );
-    records = response.conferenceRecords || [];
-  } catch (error) {
-    console.error("Failed to fetch conference records:", error);
+  const meetRepo = new MeetRepository();
+  const meetService = new MeetService(meetRepo);
+  const result = await meetService.getConferenceRecordsBySpace(
+    code,
+    user.googleAccessToken,
+  );
+
+  if (result.isErr()) {
+    console.error("Failed to fetch conference records:", result.error);
     return (
       <main className="p-10">
         <Card>
@@ -57,6 +58,8 @@ export default async function SpacePage({
       </main>
     );
   }
+
+  const records = result.value.conferenceRecords;
 
   return (
     <main className="min-h-screen bg-zinc-50 dark:bg-zinc-950 py-10 px-4 sm:px-6 lg:px-8">
