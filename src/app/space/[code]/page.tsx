@@ -1,7 +1,6 @@
 import { getCurrentUser } from "@/infra/auth";
 import { MeetService } from "@/application/meet-service";
 import { MeetRepository } from "@/infra/meet-repo";
-import { ConferenceRecord } from "@/domain/meet";
 import { redirect } from "next/navigation";
 import {
   Card,
@@ -60,7 +59,7 @@ export default async function SpacePage({
     );
   }
 
-  const records = result.value.conferenceRecords || [];
+  const records = result.value.conferenceRecords;
 
   return (
     <main className="min-h-screen bg-zinc-50 dark:bg-zinc-950 py-10 px-4 sm:px-6 lg:px-8">
@@ -94,7 +93,7 @@ export default async function SpacePage({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {records.map((record: ConferenceRecord) => {
+                  {records.map((record) => {
                     const id = record.name.replace("conferenceRecords/", "");
                     return (
                       <TableRow key={record.name}>

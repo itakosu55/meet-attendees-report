@@ -56,16 +56,14 @@ export class MeetService {
           ),
         );
 
-        return ResultAsync.fromPromise(
-          Promise.all(sessionPromises),
-          (error) =>
-            new MeetApiError("Failed to fetch participant sessions", error),
-        ).map((sessionsNested) => ({
-          record,
-          spaceCode,
-          participants,
-          allSessions: sessionsNested.flat(),
-        }));
+        return ResultAsync.fromSafePromise(Promise.all(sessionPromises)).map(
+          (sessionsNested) => ({
+            record,
+            spaceCode,
+            participants,
+            allSessions: sessionsNested.flat(),
+          }),
+        );
       });
   }
 
@@ -82,13 +80,9 @@ export class MeetService {
       return okAsync("");
     }
 
-    const matchPromise = this.meetRepository
+    return this.meetRepository
       .getSpace(record.space, accessToken)
-      .match(
-        (spaceDetails) => spaceDetails.meetingCode || fallbackSpaceCode,
-        () => fallbackSpaceCode,
-      );
-    // Promiseで解決される結果をResultAsyncとしてラップし直す
-    return ResultAsync.fromPromise(matchPromise, () => undefined as never);
+      .map((spaceDetails) => spaceDetails.meetingCode || fallbackSpaceCode)
+      .orElse(() => okAsync(fallbackSpaceCode));
   }
 }

@@ -75,16 +75,12 @@ export default async function MeetingPage({
           <CardHeader>
             <CardTitle>タイムライン</CardTitle>
             <CardDescription>
-              {record && (
-                <>
-                  {new Date(record.startTime).toLocaleString("ja-JP")} 〜{" "}
-                  {new Date(record.endTime).toLocaleString("ja-JP")}
-                </>
-              )}
+              {new Date(record.startTime).toLocaleString("ja-JP")} 〜{" "}
+              {new Date(record.endTime).toLocaleString("ja-JP")}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {participants.length === 0 || !record ? (
+            {participants.length === 0 ? (
               <p>参加者データが見つかりませんでした。</p>
             ) : (
               <MeetingTimeline
