@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { MeetingTimeline } from "@/components/meeting-timeline";
+import { MeetingSessionsLoader } from "@/components/meeting-sessions-loader";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -29,7 +29,7 @@ export default async function MeetingPage({
 
   const meetRepo = new MeetRepository();
   const meetService = new MeetService(meetRepo);
-  const result = await meetService.getMeetingDetails(id, accessToken);
+  const result = await meetService.getMeetingBasicInfo(id, accessToken);
 
   if (result.isErr()) {
     console.error("Failed to fetch meeting details:", result.error);
@@ -52,7 +52,7 @@ export default async function MeetingPage({
     );
   }
 
-  const { record, spaceCode, participants, allSessions } = result.value;
+  const { record, spaceCode, participants } = result.value;
 
   return (
     <main className="min-h-screen bg-zinc-50 dark:bg-zinc-950 py-10 px-4 sm:px-6 lg:px-8">
@@ -83,9 +83,8 @@ export default async function MeetingPage({
             {participants.length === 0 ? (
               <p>参加者データが見つかりませんでした。</p>
             ) : (
-              <MeetingTimeline
+              <MeetingSessionsLoader
                 participants={participants}
-                sessions={allSessions}
                 meetingStartTime={record.startTime}
                 meetingEndTime={record.endTime}
               />

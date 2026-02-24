@@ -7,12 +7,29 @@ import {
   SpaceNotFoundError,
 } from "@/domain/meet";
 import { ResultAsync, okAsync } from "neverthrow";
+import pLimit from "p-limit";
 
 export interface MeetingDetailsResult {
   record: ConferenceRecord;
   spaceCode: string;
   participants: Participant[];
   allSessions: ParticipantSession[];
+}
+
+export interface MeetingBasicInfoResult {
+  record: ConferenceRecord;
+  spaceCode: string;
+  participants: Participant[];
+}
+
+const limiters = new Map<string, ReturnType<typeof pLimit>>();
+function getUserLimit(accessToken: string) {
+  let limit = limiters.get(accessToken);
+  if (!limit) {
+    limit = pLimit(5); // ユーザーあたり5並行までとする
+    limiters.set(accessToken, limit);
+  }
+  return limit;
 }
 
 export class MeetService {
@@ -25,11 +42,61 @@ export class MeetService {
     );
   }
 
+  getMeetingBasicInfo(
+    id: string,
+    accessToken: string,
+  ): ResultAsync<MeetingBasicInfoResult, MeetApiError | SpaceNotFoundError> {
+    const recordName = `conferenceRecords/${id}`;
+
+    return this.meetRepository
+      .getConferenceRecord(recordName, accessToken)
+      .andThen((record) => {
+        return this.resolveSpaceCode(record, accessToken).map((spaceCode) => ({
+          record,
+          spaceCode,
+        }));
+      })
+      .andThen(({ record, spaceCode }) => {
+        return this.meetRepository
+          .getParticipants(recordName, accessToken)
+          .map((res) => ({
+            record,
+            spaceCode,
+            participants: res.participants,
+          }));
+      });
+  }
+
+  getParticipantSessions(
+    participantName: string,
+    accessToken: string,
+  ): ResultAsync<ParticipantSession[], never> {
+    const limit = getUserLimit(accessToken);
+    return ResultAsync.fromSafePromise(
+      limit(() =>
+        this.meetRepository
+          .getParticipantSessions(participantName, accessToken)
+          .map((res) => res.participantSessions)
+          .match(
+            (sessions) => sessions,
+            (error) => {
+              console.error(
+                `Failed to get sessions for ${participantName}:`,
+                error,
+              );
+              return [];
+            },
+          ),
+      ),
+    );
+  }
+
   getMeetingDetails(
     id: string,
     accessToken: string,
   ): ResultAsync<MeetingDetailsResult, MeetApiError | SpaceNotFoundError> {
     const recordName = `conferenceRecords/${id}`;
+    const limit = getUserLimit(accessToken);
 
     return this.meetRepository
       .getConferenceRecord(recordName, accessToken)
@@ -50,9 +117,13 @@ export class MeetService {
       })
       .andThen(({ record, spaceCode, participants }) => {
         const sessionPromises = participants.map((p) =>
-          this.meetRepository.getParticipantSessions(p.name, accessToken).match(
-            (res) => res.participantSessions,
-            () => [], // 一部のセッション取得失敗が全体の失敗にならないようにフォールバック
+          limit(() =>
+            this.meetRepository
+              .getParticipantSessions(p.name, accessToken)
+              .match(
+                (res) => res.participantSessions,
+                () => [], // 一部のセッション取得失敗が全体の失敗にならないようにフォールバック
+              ),
           ),
         );
 
