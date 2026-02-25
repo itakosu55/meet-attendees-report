@@ -11,6 +11,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   const result = await authService.getCurrentSession();
   const session = result.isOk() ? result.value : null;

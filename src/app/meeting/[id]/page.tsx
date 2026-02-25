@@ -12,6 +12,8 @@ import { MeetingSessionsLoader } from "@/components/meeting-sessions-loader";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
+export const dynamic = "force-dynamic";
+
 export default async function MeetingPage({
   params,
 }: {
