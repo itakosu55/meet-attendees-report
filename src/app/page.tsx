@@ -1,5 +1,4 @@
-import { AuthService } from "@/application/auth-service";
-import { NextAuthRepository } from "@/infra/next-auth-repo";
+import { authService } from "@/lib/di";
 import { LoginButton } from "@/components/login-button";
 import { SpaceForm } from "@/components/space-form";
 import { signOut } from "@/auth";
@@ -13,9 +12,6 @@ import {
 } from "@/components/ui/card";
 
 export default async function Home() {
-  const authRepository = new NextAuthRepository();
-  const authService = new AuthService(authRepository);
-
   const result = await authService.getCurrentSession();
   const session = result.isOk() ? result.value : null;
 

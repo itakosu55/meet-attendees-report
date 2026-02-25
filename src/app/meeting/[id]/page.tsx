@@ -1,7 +1,4 @@
-import { AuthService } from "@/application/auth-service";
-import { NextAuthRepository } from "@/infra/next-auth-repo";
-import { MeetRepository } from "@/infra/meet-repo";
-import { MeetService } from "@/application/meet-service";
+import { authService, meetService } from "@/lib/di";
 import { redirect } from "next/navigation";
 import {
   Card,
@@ -20,8 +17,6 @@ export default async function MeetingPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const authRepository = new NextAuthRepository();
-  const authService = new AuthService(authRepository);
   const resultSession = await authService.getCurrentSession();
   const session = resultSession.isOk() ? resultSession.value : null;
 
@@ -35,8 +30,6 @@ export default async function MeetingPage({
 
   const accessToken = session.googleAccessToken;
 
-  const meetRepo = new MeetRepository();
-  const meetService = new MeetService(meetRepo, session.user.id);
   const result = await meetService.getMeetingBasicInfo(id, accessToken);
 
   if (result.isErr()) {
