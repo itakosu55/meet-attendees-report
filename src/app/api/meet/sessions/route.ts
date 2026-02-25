@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/infra/auth";
-import { MeetRepository } from "@/infra/meet-repo";
-import { MeetService } from "@/application/meet-service";
+import { authService, getMeetService } from "@/lib/di";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -14,17 +12,32 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const user = await getCurrentUser();
-  if (!user || !user.googleAccessToken) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const resultSession = await authService.getCurrentSession();
+  const session = resultSession.isOk() ? resultSession.value : null;
+
+  if (resultSession.isErr()) {
+    console.error("Auth error:", resultSession.error);
   }
 
-  const meetRepo = new MeetRepository();
-  const meetService = new MeetService(meetRepo, user.uid);
+  // If there is no session, no access token, or a session error, require re-authentication
+  const sessionError = session?.error;
+  if (!session || sessionError || !session.googleAccessToken) {
+    const responseBody = sessionError
+      ? {
+          error:
+            "Unauthorized: access token refresh failed, please sign in again",
+          code: "SESSION_REFRESH_FAILED",
+        }
+      : { error: "Unauthorized" };
 
+    return NextResponse.json(responseBody, { status: 401 });
+  }
+
+  const meetService = await getMeetService();
   const result = await meetService.getParticipantSessions(
+    session.user.id,
     participantName,
-    user.googleAccessToken,
+    session.googleAccessToken,
   );
 
   if (result.isErr()) {

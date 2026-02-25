@@ -38,10 +38,7 @@ function getUserLimit(userId: string) {
 }
 
 export class MeetService {
-  constructor(
-    private readonly meetRepository: IMeetRepository,
-    private readonly userId: string,
-  ) {}
+  constructor(private readonly meetRepository: IMeetRepository) {}
 
   getConferenceRecordsBySpace(spaceCode: string, accessToken: string) {
     return this.meetRepository.getConferenceRecordsBySpace(
@@ -76,10 +73,11 @@ export class MeetService {
   }
 
   getParticipantSessions(
+    userId: string,
     participantName: string,
     accessToken: string,
   ): ResultAsync<ParticipantSession[], MeetApiError> {
-    const limit = getUserLimit(this.userId);
+    const limit = getUserLimit(userId);
     return new ResultAsync(
       limit(() =>
         this.meetRepository.getParticipantSessions(
@@ -91,11 +89,12 @@ export class MeetService {
   }
 
   getMeetingDetails(
+    userId: string,
     id: string,
     accessToken: string,
   ): ResultAsync<MeetingDetailsResult, MeetApiError | SpaceNotFoundError> {
     const recordName = `conferenceRecords/${id}`;
-    const limit = getUserLimit(this.userId);
+    const limit = getUserLimit(userId);
 
     return this.meetRepository
       .getConferenceRecord(recordName, accessToken)

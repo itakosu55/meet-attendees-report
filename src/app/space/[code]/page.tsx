@@ -1,7 +1,6 @@
-import { getCurrentUser } from "@/infra/auth";
-import { MeetService } from "@/application/meet-service";
-import { MeetRepository } from "@/infra/meet-repo";
+import { authService, getMeetService } from "@/lib/di";
 import { redirect } from "next/navigation";
+import { signOut } from "@/auth";
 import {
   Card,
   CardContent,
@@ -26,17 +25,26 @@ export default async function SpacePage({
   params: Promise<{ code: string }>;
 }) {
   const { code } = await params;
-  const user = await getCurrentUser();
+  const resultSession = await authService.getCurrentSession();
+  const session = resultSession.isOk() ? resultSession.value : null;
 
-  if (!user || !user.googleAccessToken) {
+  if (resultSession.isErr()) {
+    console.error("Auth error:", resultSession.error);
+  }
+
+  if (session?.error === "RefreshAccessTokenError") {
+    await signOut({ redirectTo: "/" });
+    return null; // unreachable due to redirect
+  }
+
+  if (!session || !session.googleAccessToken) {
     redirect("/");
   }
 
-  const meetRepo = new MeetRepository();
-  const meetService = new MeetService(meetRepo, user.uid);
+  const meetService = await getMeetService();
   const result = await meetService.getConferenceRecordsBySpace(
     code,
-    user.googleAccessToken,
+    session.googleAccessToken,
   );
 
   if (result.isErr()) {

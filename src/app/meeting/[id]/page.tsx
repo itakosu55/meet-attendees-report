@@ -1,7 +1,6 @@
-import { getCurrentUser } from "@/infra/auth";
-import { MeetRepository } from "@/infra/meet-repo";
-import { MeetService } from "@/application/meet-service";
+import { authService, getMeetService } from "@/lib/di";
 import { redirect } from "next/navigation";
+import { signOut } from "@/auth";
 import {
   Card,
   CardContent,
@@ -19,16 +18,25 @@ export default async function MeetingPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const user = await getCurrentUser();
+  const resultSession = await authService.getCurrentSession();
+  const session = resultSession.isOk() ? resultSession.value : null;
 
-  if (!user || !user.googleAccessToken) {
+  if (resultSession.isErr()) {
+    console.error("Auth error:", resultSession.error);
+  }
+
+  // If access token refresh failed, force re-authentication (clear session)
+  if (session?.error === "RefreshAccessTokenError") {
+    await signOut({ redirectTo: "/" });
+    return null; // unreachable due to redirect
+  }
+  if (!session || !session.googleAccessToken) {
     redirect("/");
   }
 
-  const accessToken = user.googleAccessToken;
+  const accessToken = session.googleAccessToken;
 
-  const meetRepo = new MeetRepository();
-  const meetService = new MeetService(meetRepo, user.uid);
+  const meetService = await getMeetService();
   const result = await meetService.getMeetingBasicInfo(id, accessToken);
 
   if (result.isErr()) {
