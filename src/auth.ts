@@ -5,8 +5,6 @@ type RefreshErrorType = "RefreshAccessTokenError";
 
 declare module "next-auth" {
   interface Session {
-    accessToken?: string;
-    error?: RefreshErrorType;
     user: {
       id: string;
     } & DefaultSession["user"];
@@ -109,8 +107,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
     },
     async session({ session, token }) {
-      session.accessToken = token.accessToken as string | undefined;
-      session.error = token.error as RefreshErrorType | undefined;
       if (token.sub) {
         session.user.id = token.sub;
       }

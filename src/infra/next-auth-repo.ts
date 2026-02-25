@@ -1,27 +1,42 @@
 import { IAuthRepository, AuthSession, AuthApiError } from "@/domain/auth";
 import { auth } from "@/auth";
-import { ResultAsync, okAsync } from "neverthrow";
+import { ResultAsync } from "neverthrow";
+import { getToken } from "next-auth/jwt";
+import { headers } from "next/headers";
+import { NextRequest } from "next/server";
 
 export class NextAuthRepository implements IAuthRepository {
   getCurrentSession(): ResultAsync<AuthSession | null, AuthApiError> {
     return ResultAsync.fromPromise(
-      auth(),
-      (error) => new AuthApiError("Failed to get NextAuth session", error),
-    ).andThen((session) => {
-      if (!session) {
-        return okAsync(null);
-      }
+      (async () => {
+        const session = await auth();
+        if (!session) {
+          return null;
+        }
 
-      return okAsync({
-        user: {
-          id: session.user.id,
-          name: session.user.name,
-          email: session.user.email,
-          picture: session.user.image,
-        },
-        googleAccessToken: session.accessToken,
-        error: session.error,
-      });
-    });
+        const headersList = await headers();
+        const req = new NextRequest("http://localhost", {
+          headers: headersList,
+        });
+
+        const token = await getToken({
+          req,
+          secret: process.env.AUTH_SECRET,
+        });
+
+        return {
+          user: {
+            id: session.user.id,
+            name: session.user.name,
+            email: session.user.email,
+            picture: session.user.image,
+          },
+          googleAccessToken: token?.accessToken as string | undefined,
+          error: token?.error as "RefreshAccessTokenError" | undefined,
+        } as AuthSession;
+      })(),
+      (error) =>
+        new AuthApiError("Failed to get NextAuth session and token", error),
+    );
   }
 }
