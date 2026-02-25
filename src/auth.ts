@@ -25,49 +25,50 @@ if (
   );
 }
 
+import { ResultAsync } from "neverthrow";
 import type { JWT } from "next-auth/jwt";
 
-export async function refreshAccessToken(token: JWT): Promise<JWT> {
-  try {
-    if (!token.refreshToken) {
-      throw new Error("Missing refresh token");
-    }
+export function refreshAccessToken(token: JWT): ResultAsync<JWT, Error> {
+  return ResultAsync.fromPromise(
+    (async () => {
+      if (!token.refreshToken) {
+        throw new Error("Missing refresh token");
+      }
 
-    const response = await fetch("https://oauth2.googleapis.com/token", {
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        client_id: process.env.AUTH_GOOGLE_ID as string,
-        client_secret: process.env.AUTH_GOOGLE_SECRET as string,
-        grant_type: "refresh_token",
-        refresh_token: token.refreshToken as string,
-      }),
-      method: "POST",
-    });
+      const response = await fetch("https://oauth2.googleapis.com/token", {
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          client_id: process.env.AUTH_GOOGLE_ID as string,
+          client_secret: process.env.AUTH_GOOGLE_SECRET as string,
+          grant_type: "refresh_token",
+          refresh_token: token.refreshToken as string,
+        }),
+        method: "POST",
+      });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Token refresh failed: ${response.status} ${errorText}`);
-    }
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Token refresh failed: ${response.status} ${errorText}`,
+        );
+      }
 
-    const tokens = (await response.json()) as {
-      access_token: string;
-      expires_in: number;
-      refresh_token?: string;
-    };
+      const tokens = (await response.json()) as {
+        access_token: string;
+        expires_in: number;
+        refresh_token?: string;
+      };
 
-    return {
-      ...token,
-      accessToken: tokens.access_token,
-      expiresAt: Date.now() + tokens.expires_in * 1000,
-      refreshToken: tokens.refresh_token ?? (token.refreshToken as string),
-    };
-  } catch (error) {
-    console.error("Error refreshing access token", error);
-    return {
-      ...token,
-      error: "RefreshAccessTokenError" as RefreshErrorType,
-    };
-  }
+      return {
+        ...token,
+        accessToken: tokens.access_token,
+        expiresAt: Date.now() + tokens.expires_in * 1000,
+        refreshToken: tokens.refresh_token ?? (token.refreshToken as string),
+        error: undefined,
+      };
+    })(),
+    (error) => (error instanceof Error ? error : new Error(String(error))),
+  );
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -108,7 +109,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
 
       // アクセストークンが期限切れの場合の更新処理
-      return refreshAccessToken(token);
+      const result = await refreshAccessToken(token);
+      return result.match(
+        (t) => t,
+        (error) => {
+          console.error("Error refreshing access token", error);
+          return {
+            ...token,
+            error: "RefreshAccessTokenError" as RefreshErrorType,
+          };
+        },
+      );
     },
     async session({ session, token }) {
       if (!token.sub) {

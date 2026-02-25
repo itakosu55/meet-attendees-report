@@ -38,7 +38,17 @@ export class NextAuthRepository implements IAuthRepository {
         ) {
           // Server Components cannot update cookies, so getToken() reads stale data.
           // Manually refresh the token here to ensure API clients get a valid token.
-          token = await refreshAccessToken(token);
+          const refreshResult = await refreshAccessToken(token);
+          token = refreshResult.match(
+            (t) => t,
+            (error) => {
+              console.error("Error manually refreshing access token:", error);
+              return {
+                ...token,
+                error: "RefreshAccessTokenError" as const,
+              };
+            },
+          );
         }
 
         return {
