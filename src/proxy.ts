@@ -10,7 +10,7 @@ export const config = {
   // staticファイル、画像、APIの一部などは除外することが多いですが、
   // 今回は主要なページとAPI（特にServer Component内での取得が関わるもの）に適用します。
   matcher: [
-    // _next/static, _next/image, favicon.ico 等の静的ファイルを除外
-    "/((?!api|_next/static|_next/image|favicon.ico).*)",
+    // _next/static, _next/image, favicon.ico 等の静的ファイルと NextAuth の API 認証エンドポイントを除外
+    "/((?!api/auth|_next/static|_next/image|favicon.ico).*)",
   ],
 };
