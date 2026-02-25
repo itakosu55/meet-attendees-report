@@ -28,6 +28,10 @@ export default async function SpacePage({
   const resultSession = await authService.getCurrentSession();
   const session = resultSession.isOk() ? resultSession.value : null;
 
+  if (resultSession.isErr()) {
+    console.error("Auth error:", resultSession.error);
+  }
+
   if (session?.error === "RefreshAccessTokenError") {
     await signOut({ redirectTo: "/" });
     return null; // unreachable due to redirect

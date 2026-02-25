@@ -21,6 +21,10 @@ export default async function MeetingPage({
   const resultSession = await authService.getCurrentSession();
   const session = resultSession.isOk() ? resultSession.value : null;
 
+  if (resultSession.isErr()) {
+    console.error("Auth error:", resultSession.error);
+  }
+
   // If access token refresh failed, force re-authentication (clear session)
   if (session?.error === "RefreshAccessTokenError") {
     await signOut({ redirectTo: "/" });

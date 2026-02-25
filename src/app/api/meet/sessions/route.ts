@@ -15,6 +15,10 @@ export async function GET(request: NextRequest) {
   const resultSession = await authService.getCurrentSession();
   const session = resultSession.isOk() ? resultSession.value : null;
 
+  if (resultSession.isErr()) {
+    console.error("Auth error:", resultSession.error);
+  }
+
   // If there is no session, no access token, or a session error, require re-authentication
   const sessionError = session?.error;
   if (!session || sessionError || !session.googleAccessToken) {
