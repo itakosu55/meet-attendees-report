@@ -1,5 +1,6 @@
 import { authService, meetService } from "@/lib/di";
 import { redirect } from "next/navigation";
+import { signOut } from "@/auth";
 import {
   Card,
   CardContent,
@@ -20,9 +21,10 @@ export default async function MeetingPage({
   const resultSession = await authService.getCurrentSession();
   const session = resultSession.isOk() ? resultSession.value : null;
 
-  // If access token refresh failed, force re-authentication
-  if (session && session.error === "RefreshAccessTokenError") {
-    redirect("/");
+  // If access token refresh failed, force re-authentication (clear session)
+  if (session?.error === "RefreshAccessTokenError") {
+    await signOut({ redirectTo: "/" });
+    return null; // unreachable due to redirect
   }
   if (!session || !session.googleAccessToken) {
     redirect("/");

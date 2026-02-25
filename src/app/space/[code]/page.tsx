@@ -1,5 +1,6 @@
 import { authService, meetService } from "@/lib/di";
 import { redirect } from "next/navigation";
+import { signOut } from "@/auth";
 import {
   Card,
   CardContent,
@@ -27,7 +28,12 @@ export default async function SpacePage({
   const resultSession = await authService.getCurrentSession();
   const session = resultSession.isOk() ? resultSession.value : null;
 
-  if (!session || session.error || !session.googleAccessToken) {
+  if (session?.error === "RefreshAccessTokenError") {
+    await signOut({ redirectTo: "/" });
+    return null; // unreachable due to redirect
+  }
+
+  if (!session || !session.googleAccessToken) {
     redirect("/");
   }
 
