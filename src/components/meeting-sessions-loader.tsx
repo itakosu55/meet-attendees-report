@@ -21,15 +21,15 @@ export function MeetingSessionsLoader({
   const [isComplete, setIsComplete] = useState(false);
 
   useEffect(() => {
+    // Reset state for new participants first
+    setSessions([]);
+    setLoadedCount(0);
+    setIsComplete(false);
+
     if (participants.length === 0) {
       setIsComplete(true);
       return;
     }
-
-    // Reset state for new participants
-    setSessions([]);
-    setLoadedCount(0);
-    setIsComplete(false);
 
     const abortController = new AbortController();
     const { signal } = abortController;
