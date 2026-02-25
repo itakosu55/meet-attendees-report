@@ -81,13 +81,12 @@ export class MeetService {
   ): ResultAsync<ParticipantSession[], MeetApiError> {
     const limit = getUserLimit(this.userId);
     return new ResultAsync(
-      limit(async () => {
-        const result = await this.meetRepository.getParticipantSessions(
+      limit(() =>
+        this.meetRepository.getParticipantSessions(
           participantName,
           accessToken,
-        );
-        return result;
-      }),
+        ),
+      ),
     );
   }
 
