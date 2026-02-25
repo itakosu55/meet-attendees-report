@@ -25,6 +25,12 @@ declare module "next-auth" {
   }
 }
 
+if (!process.env.AUTH_GOOGLE_ID || !process.env.AUTH_GOOGLE_SECRET) {
+  throw new Error(
+    "Missing AUTH_GOOGLE_ID or AUTH_GOOGLE_SECRET environment variables. Please check your .env file.",
+  );
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Google({
