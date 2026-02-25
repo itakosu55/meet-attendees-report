@@ -1,4 +1,4 @@
-import { authService, meetService } from "@/lib/di";
+import { authService, getMeetService } from "@/lib/di";
 import { redirect } from "next/navigation";
 import { signOut } from "@/auth";
 import {
@@ -32,6 +32,7 @@ export default async function MeetingPage({
 
   const accessToken = session.googleAccessToken;
 
+  const meetService = await getMeetService();
   const result = await meetService.getMeetingBasicInfo(id, accessToken);
 
   if (result.isErr()) {

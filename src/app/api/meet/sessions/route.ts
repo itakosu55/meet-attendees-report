@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authService, meetService } from "@/lib/di";
+import { authService, getMeetService } from "@/lib/di";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(responseBody, { status: 401 });
   }
 
+  const meetService = await getMeetService();
   const result = await meetService.getParticipantSessions(
     session.user.id,
     participantName,

@@ -1,4 +1,4 @@
-import { authService, meetService } from "@/lib/di";
+import { authService, getMeetService } from "@/lib/di";
 import { redirect } from "next/navigation";
 import { signOut } from "@/auth";
 import {
@@ -37,6 +37,7 @@ export default async function SpacePage({
     redirect("/");
   }
 
+  const meetService = await getMeetService();
   const result = await meetService.getConferenceRecordsBySpace(
     code,
     session.googleAccessToken,
