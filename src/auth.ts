@@ -1,15 +1,7 @@
-import NextAuth, { type DefaultSession } from "next-auth";
+import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 
 type RefreshErrorType = "RefreshAccessTokenError";
-
-declare module "next-auth" {
-  interface Session {
-    user: {
-      id: string;
-    } & DefaultSession["user"];
-  }
-}
 
 // next-auth/jwt モジュールの型拡張の代わりに、@auth/core/jwt などの最新NextAuth v5の規約に従う、
 // もしくは直接コールバック内のtoken引数にアサーションを使用する方法が一般的ですが、

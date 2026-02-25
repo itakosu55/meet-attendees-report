@@ -14,6 +14,10 @@ export class NextAuthRepository implements IAuthRepository {
           return null;
         }
 
+        if (!session.user || !session.user.id) {
+          throw new Error("Invalid session: missing user ID");
+        }
+
         const headersList = await headers();
         const req = new NextRequest("http://localhost", {
           headers: headersList,
