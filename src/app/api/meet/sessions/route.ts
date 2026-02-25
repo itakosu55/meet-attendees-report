@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
   }
 
   const meetRepo = new MeetRepository();
-  const meetService = new MeetService(meetRepo);
+  const meetService = new MeetService(meetRepo, user.uid);
 
   const result = await meetService.getParticipantSessions(
     participantName,

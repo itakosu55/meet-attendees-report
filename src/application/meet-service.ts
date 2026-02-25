@@ -28,17 +28,20 @@ const limiters = new LRUCache<string, ReturnType<typeof pLimit>>({
   ttl: 1000 * 60 * 60, // 1時間でキャッシュから自動破棄 (トークンの有効期限を考慮)
 });
 
-function getUserLimit(accessToken: string) {
-  let limit = limiters.get(accessToken);
+function getUserLimit(userId: string) {
+  let limit = limiters.get(userId);
   if (!limit) {
     limit = pLimit(5); // ユーザーあたり5並行までとする
-    limiters.set(accessToken, limit);
+    limiters.set(userId, limit);
   }
   return limit;
 }
 
 export class MeetService {
-  constructor(private readonly meetRepository: IMeetRepository) {}
+  constructor(
+    private readonly meetRepository: IMeetRepository,
+    private readonly userId: string,
+  ) {}
 
   getConferenceRecordsBySpace(spaceCode: string, accessToken: string) {
     return this.meetRepository.getConferenceRecordsBySpace(
@@ -76,7 +79,7 @@ export class MeetService {
     participantName: string,
     accessToken: string,
   ): ResultAsync<ParticipantSession[], MeetApiError> {
-    const limit = getUserLimit(accessToken);
+    const limit = getUserLimit(this.userId);
     return new ResultAsync(
       limit(async () => {
         return await this.meetRepository
@@ -91,7 +94,7 @@ export class MeetService {
     accessToken: string,
   ): ResultAsync<MeetingDetailsResult, MeetApiError | SpaceNotFoundError> {
     const recordName = `conferenceRecords/${id}`;
-    const limit = getUserLimit(accessToken);
+    const limit = getUserLimit(this.userId);
 
     return this.meetRepository
       .getConferenceRecord(recordName, accessToken)

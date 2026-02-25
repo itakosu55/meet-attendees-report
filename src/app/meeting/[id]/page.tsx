@@ -28,7 +28,7 @@ export default async function MeetingPage({
   const accessToken = user.googleAccessToken;
 
   const meetRepo = new MeetRepository();
-  const meetService = new MeetService(meetRepo);
+  const meetService = new MeetService(meetRepo, user.uid);
   const result = await meetService.getMeetingBasicInfo(id, accessToken);
 
   if (result.isErr()) {
