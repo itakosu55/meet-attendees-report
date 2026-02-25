@@ -75,24 +75,14 @@ export class MeetService {
   getParticipantSessions(
     participantName: string,
     accessToken: string,
-  ): ResultAsync<ParticipantSession[], never> {
+  ): ResultAsync<ParticipantSession[], MeetApiError> {
     const limit = getUserLimit(accessToken);
-    return ResultAsync.fromSafePromise(
-      limit(() =>
-        this.meetRepository
+    return new ResultAsync(
+      limit(async () => {
+        return await this.meetRepository
           .getParticipantSessions(participantName, accessToken)
-          .map((res) => res.participantSessions)
-          .match(
-            (sessions) => sessions,
-            (error) => {
-              console.error(
-                `Failed to get sessions for ${participantName}:`,
-                error,
-              );
-              return [];
-            },
-          ),
-      ),
+          .map((res) => res.participantSessions);
+      }),
     );
   }
 

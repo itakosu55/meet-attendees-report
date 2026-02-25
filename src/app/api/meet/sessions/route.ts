@@ -27,10 +27,16 @@ export async function GET(request: NextRequest) {
     user.googleAccessToken,
   );
 
-  const sessions = result.match(
-    (s) => s,
-    () => [],
-  );
+  if (result.isErr()) {
+    console.error(
+      `Failed to get sessions for ${participantName}:`,
+      result.error,
+    );
+    return NextResponse.json(
+      { error: "Failed to fetch participant sessions" },
+      { status: 500 },
+    );
+  }
 
-  return NextResponse.json({ sessions });
+  return NextResponse.json({ sessions: result.value });
 }
