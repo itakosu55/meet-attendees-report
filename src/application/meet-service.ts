@@ -8,6 +8,7 @@ import {
 } from "@/domain/meet";
 import { ResultAsync, okAsync } from "neverthrow";
 import pLimit from "p-limit";
+import { LRUCache } from "lru-cache";
 
 export interface MeetingDetailsResult {
   record: ConferenceRecord;
@@ -22,7 +23,11 @@ export interface MeetingBasicInfoResult {
   participants: Participant[];
 }
 
-const limiters = new Map<string, ReturnType<typeof pLimit>>();
+const limiters = new LRUCache<string, ReturnType<typeof pLimit>>({
+  max: 500, // 最大500ユーザー分のトークンを保持
+  ttl: 1000 * 60 * 60, // 1時間でキャッシュから自動破棄 (トークンの有効期限を考慮)
+});
+
 function getUserLimit(accessToken: string) {
   let limit = limiters.get(accessToken);
   if (!limit) {
