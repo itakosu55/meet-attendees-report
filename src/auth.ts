@@ -28,20 +28,37 @@ if (
 import { ResultAsync } from "neverthrow";
 import type { JWT } from "next-auth/jwt";
 
-export function refreshAccessToken(token: JWT): ResultAsync<JWT, Error> {
-  return ResultAsync.fromPromise(
-    (async () => {
-      if (!token.refreshToken) {
-        throw new Error("Missing refresh token");
-      }
+import { LRUCache } from "lru-cache";
 
+// LRUCache to deduplicate in-flight and recently completed token refresh requests.
+const tokenRefreshCache = new LRUCache<string, Promise<JWT>>({
+  max: 100,
+  ttl: 1000 * 30, // 30 seconds
+});
+
+export function refreshAccessToken(token: JWT): ResultAsync<JWT, Error> {
+  if (!token.refreshToken) {
+    return ResultAsync.fromPromise(
+      Promise.reject(new Error("Missing refresh token")),
+      (error) => (error instanceof Error ? error : new Error(String(error))),
+    );
+  }
+
+  const refreshToken = token.refreshToken as string;
+
+  let refreshPromise: Promise<JWT>;
+
+  if (tokenRefreshCache.has(refreshToken)) {
+    refreshPromise = tokenRefreshCache.get(refreshToken) as Promise<JWT>;
+  } else {
+    refreshPromise = (async () => {
       const response = await fetch("https://oauth2.googleapis.com/token", {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({
           client_id: process.env.AUTH_GOOGLE_ID as string,
           client_secret: process.env.AUTH_GOOGLE_SECRET as string,
           grant_type: "refresh_token",
-          refresh_token: token.refreshToken as string,
+          refresh_token: refreshToken,
         }),
         method: "POST",
       });
@@ -63,11 +80,20 @@ export function refreshAccessToken(token: JWT): ResultAsync<JWT, Error> {
         ...token,
         accessToken: tokens.access_token,
         expiresAt: Date.now() + tokens.expires_in * 1000,
-        refreshToken: tokens.refresh_token ?? (token.refreshToken as string),
+        refreshToken: tokens.refresh_token ?? refreshToken,
         error: undefined,
-      };
-    })(),
-    (error) => (error instanceof Error ? error : new Error(String(error))),
+      } as JWT;
+    })().catch((error) => {
+      // Remove from cache on failure so it can be retried
+      tokenRefreshCache.delete(refreshToken);
+      throw error;
+    });
+
+    tokenRefreshCache.set(refreshToken, refreshPromise);
+  }
+
+  return ResultAsync.fromPromise(refreshPromise, (error) =>
+    error instanceof Error ? error : new Error(String(error)),
   );
 }
 
