@@ -15,18 +15,18 @@ export async function GET(request: NextRequest) {
   const resultSession = await authService.getCurrentSession();
   const session = resultSession.isOk() ? resultSession.value : null;
 
-  // If the access token refresh failed, require the user to re-authenticate
-  if (session && session.error === "RefreshAccessTokenError") {
-    return NextResponse.json(
-      {
-        error:
-          "Unauthorized: access token refresh failed, please sign in again",
-      },
-      { status: 401 },
-    );
-  }
-  if (!session || !session.googleAccessToken) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // If there is no session, no access token, or a session error, require re-authentication
+  const sessionError = session?.error;
+  if (!session || sessionError || !session.googleAccessToken) {
+    const responseBody = sessionError
+      ? {
+          error:
+            "Unauthorized: access token refresh failed, please sign in again",
+          code: "SESSION_REFRESH_FAILED",
+        }
+      : { error: "Unauthorized" };
+
+    return NextResponse.json(responseBody, { status: 401 });
   }
 
   const result = await meetService.getParticipantSessions(
