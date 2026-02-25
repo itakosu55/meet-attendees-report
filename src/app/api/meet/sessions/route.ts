@@ -21,9 +21,12 @@ export async function GET(request: NextRequest) {
   const session = resultSession.isOk() ? resultSession.value : null;
 
   // If the access token refresh failed, require the user to re-authenticate
-  if (session && (session as any).error === "RefreshAccessTokenError") {
+  if (session && session.error === "RefreshAccessTokenError") {
     return NextResponse.json(
-      { error: "Unauthorized: access token refresh failed, please sign in again" },
+      {
+        error:
+          "Unauthorized: access token refresh failed, please sign in again",
+      },
       { status: 401 },
     );
   }
