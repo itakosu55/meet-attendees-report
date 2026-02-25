@@ -14,6 +14,7 @@ export function LoginButton() {
       await signIn("google", { callbackUrl: "/" });
     } catch (error) {
       console.error("Login error:", error);
+    } finally {
       setIsLoading(false);
     }
   };
