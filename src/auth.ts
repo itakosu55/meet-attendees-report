@@ -17,7 +17,7 @@ declare module "next-auth" {
 // もしくは直接コールバック内のtoken引数にアサーションを使用する方法が一般的ですが、
 // ここでは NextAuth v5 (beta) で推奨の宣言を使用します
 declare module "next-auth" {
-  interface jwt {
+  interface JWT {
     accessToken?: string;
     refreshToken?: string;
     expiresAt?: number;
