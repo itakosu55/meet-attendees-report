@@ -19,6 +19,9 @@ export class NextAuthRepository implements IAuthRepository {
         }
 
         const headersList = await headers();
+        // getToken requires a Request/NextRequest instance to read cookies.
+        // In Server Components, we only have access to headers().
+        // The URL is not actually used by getToken, so "http://localhost" is an intentional dummy value.
         const req = new NextRequest("http://localhost", {
           headers: headersList,
         });
