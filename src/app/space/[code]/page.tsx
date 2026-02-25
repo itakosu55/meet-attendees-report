@@ -59,7 +59,7 @@ export default async function SpacePage({
     );
   }
 
-  const records = result.value.conferenceRecords;
+  const records = result.value;
 
   return (
     <main className="min-h-screen bg-zinc-50 dark:bg-zinc-950 py-10 px-4 sm:px-6 lg:px-8">
