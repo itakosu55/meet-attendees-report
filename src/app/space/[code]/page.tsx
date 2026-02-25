@@ -33,7 +33,7 @@ export default async function SpacePage({
   }
 
   const meetRepo = new MeetRepository();
-  const meetService = new MeetService(meetRepo);
+  const meetService = new MeetService(meetRepo, user.uid);
   const result = await meetService.getConferenceRecordsBySpace(
     code,
     user.googleAccessToken,

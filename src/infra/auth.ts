@@ -26,7 +26,7 @@ export async function getCurrentUser() {
       picture: decodedToken.picture,
       googleAccessToken: accessToken,
     };
-  } catch (error) {
+  } catch {
     // We stored ID token, let's try verifyIdToken
     try {
       const decodedToken = await adminAuth.verifyIdToken(session);
