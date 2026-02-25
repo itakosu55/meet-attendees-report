@@ -21,27 +21,32 @@ export function MeetingSessionsLoader({
   const [isComplete, setIsComplete] = useState(false);
 
   useEffect(() => {
-    let mounted = true;
-
     if (participants.length === 0) {
       setIsComplete(true);
       return;
     }
 
-    // Reset state in case of component reuse with new participants
+    // Reset state for new participants
     setSessions([]);
     setLoadedCount(0);
     setIsComplete(false);
+
+    const abortController = new AbortController();
+    const { signal } = abortController;
+
     const fetchAll = async () => {
-      // クライアント側からの Server Actions リクエスト並行数を制限する（バックエンドの負荷軽減）
+      // クライアント側からの API リクエスト並行数を制限する（バックエンドの負荷軽減）
       const limit = pLimit(5);
 
       const promises = participants.map((participant) =>
         limit(async () => {
-          if (!mounted) return;
+          if (signal.aborted) return;
+
           try {
-            const url = `/api/meet/sessions?name=${encodeURIComponent(participant.name)}`;
-            const res = await fetch(url);
+            const url = `/api/meet/sessions?name=${encodeURIComponent(
+              participant.name,
+            )}`;
+            const res = await fetch(url, { signal });
 
             if (!res.ok) {
               throw new Error(`API returned ${res.status}`);
@@ -50,32 +55,40 @@ export function MeetingSessionsLoader({
             const data = await res.json();
             const result = data.sessions as ParticipantSession[];
 
-            if (mounted && result) {
+            if (!signal.aborted && result) {
               setSessions((prev) => [...prev, ...result]);
             }
           } catch (error) {
-            console.error(
-              `Failed to fetch session for ${participant.name}`,
-              error,
-            );
+            if (error instanceof Error && error.name !== "AbortError") {
+              console.error(
+                `Failed to fetch session for ${participant.name}`,
+                error,
+              );
+            }
           } finally {
-            if (mounted) {
+            if (!signal.aborted) {
               setLoadedCount((prev) => prev + 1);
             }
           }
         }),
       );
 
-      await Promise.all(promises);
-      if (mounted) {
-        setIsComplete(true);
+      try {
+        await Promise.all(promises);
+        if (!signal.aborted) {
+          setIsComplete(true);
+        }
+      } catch (error) {
+        if (error instanceof Error && error.name !== "AbortError") {
+          console.error("An error occurred during fetchAll", error);
+        }
       }
     };
 
     fetchAll();
 
     return () => {
-      mounted = false;
+      abortController.abort();
     };
   }, [participants]);
 
