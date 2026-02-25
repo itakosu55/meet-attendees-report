@@ -1,5 +1,5 @@
 import { IAuthRepository, AuthSession, AuthApiError } from "@/domain/auth";
-import { auth } from "@/auth";
+import { auth, refreshAccessToken } from "@/auth";
 import { ResultAsync } from "neverthrow";
 import { getToken } from "next-auth/jwt";
 import { headers } from "next/headers";
@@ -26,10 +26,20 @@ export class NextAuthRepository implements IAuthRepository {
           headers: headersList,
         });
 
-        const token = await getToken({
+        let token = await getToken({
           req,
           secret: process.env.AUTH_SECRET,
         });
+
+        if (
+          token &&
+          typeof token.expiresAt === "number" &&
+          Date.now() >= token.expiresAt
+        ) {
+          // Server Components cannot update cookies, so getToken() reads stale data.
+          // Manually refresh the token here to ensure API clients get a valid token.
+          token = await refreshAccessToken(token);
+        }
 
         return {
           user: {
