@@ -126,6 +126,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           expiresAt: account.expires_at
             ? Math.floor(account.expires_at * 1000)
             : 0,
+          error: undefined,
         };
       }
 
