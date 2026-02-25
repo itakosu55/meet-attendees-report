@@ -15,13 +15,18 @@ declare module "next-auth" {
   }
 }
 
-if (!process.env.AUTH_GOOGLE_ID || !process.env.AUTH_GOOGLE_SECRET) {
+if (
+  !process.env.AUTH_GOOGLE_ID ||
+  !process.env.AUTH_GOOGLE_SECRET ||
+  !process.env.AUTH_SECRET
+) {
   throw new Error(
-    "Missing AUTH_GOOGLE_ID or AUTH_GOOGLE_SECRET environment variables. Please check your .env file.",
+    "Missing AUTH_GOOGLE_ID, AUTH_GOOGLE_SECRET, or AUTH_SECRET environment variables. Please check your .env file.",
   );
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  secret: process.env.AUTH_SECRET,
   providers: [
     Google({
       clientId: process.env.AUTH_GOOGLE_ID,
