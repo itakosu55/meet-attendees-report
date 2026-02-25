@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Participant, ParticipantSession } from "@/domain/meet";
 import { MeetingTimeline } from "@/components/meeting-timeline";
+import { Progress } from "@/components/ui/progress";
 import pLimit from "p-limit";
 
 interface MeetingSessionsLoaderProps {
@@ -106,12 +107,7 @@ export function MeetingSessionsLoader({
             参加者のセッション履歴を取得中... ({loadedCount} /{" "}
             {participants.length})
           </div>
-          <div className="w-full bg-zinc-200 dark:bg-zinc-800 rounded-full h-2.5 overflow-hidden">
-            <div
-              className="bg-zinc-900 dark:bg-zinc-100 h-2.5 rounded-full transition-all duration-300 ease-in-out"
-              style={{ width: `${progressPercentage}%` }}
-            ></div>
-          </div>
+          <Progress value={progressPercentage} className="h-2.5" />
         </div>
       )}
 
