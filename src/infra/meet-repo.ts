@@ -22,6 +22,8 @@ export class MeetRepository implements IMeetRepository {
   ): Promise<ConferenceRecord[]> {
     const records: ConferenceRecord[] = [];
     let pageToken: string | undefined = undefined;
+    const MAX_PAGES = 50;
+    let pageCount = 0;
     do {
       const params: meet_v2.Params$Resource$Conferencerecords$List = {
         filter: `space.meeting_code="${spaceCode}"`,
@@ -32,7 +34,8 @@ export class MeetRepository implements IMeetRepository {
         records.push(...(res.data.conferenceRecords as ConferenceRecord[]));
       }
       pageToken = res.data.nextPageToken || undefined;
-    } while (pageToken);
+      pageCount++;
+    } while (pageToken && pageCount < MAX_PAGES);
     return records;
   }
 
@@ -70,6 +73,8 @@ export class MeetRepository implements IMeetRepository {
   ): Promise<Participant[]> {
     const participants: Participant[] = [];
     let pageToken: string | undefined = undefined;
+    const MAX_PAGES = 50;
+    let pageCount = 0;
     do {
       const params: meet_v2.Params$Resource$Conferencerecords$Participants$List =
         {
@@ -81,7 +86,8 @@ export class MeetRepository implements IMeetRepository {
         participants.push(...(res.data.participants as Participant[]));
       }
       pageToken = res.data.nextPageToken || undefined;
-    } while (pageToken);
+      pageCount++;
+    } while (pageToken && pageCount < MAX_PAGES);
     return participants;
   }
 
@@ -106,6 +112,8 @@ export class MeetRepository implements IMeetRepository {
   ): Promise<ParticipantSession[]> {
     const sessions: ParticipantSession[] = [];
     let pageToken: string | undefined = undefined;
+    const MAX_PAGES = 50;
+    let pageCount = 0;
     do {
       const params: meet_v2.Params$Resource$Conferencerecords$Participants$Participantsessions$List =
         {
@@ -122,7 +130,8 @@ export class MeetRepository implements IMeetRepository {
         );
       }
       pageToken = res.data.nextPageToken || undefined;
-    } while (pageToken);
+      pageCount++;
+    } while (pageToken && pageCount < MAX_PAGES);
     return sessions;
   }
 
