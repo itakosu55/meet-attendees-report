@@ -67,10 +67,10 @@ export class MeetService {
       .andThen(({ record, spaceCode }) => {
         return this.meetRepository
           .getParticipants(recordName, accessToken)
-          .map((res) => ({
+          .map((participants) => ({
             record,
             spaceCode,
-            participants: res.participants,
+            participants,
           }));
       });
   }
@@ -81,11 +81,12 @@ export class MeetService {
   ): ResultAsync<ParticipantSession[], MeetApiError> {
     const limit = getUserLimit(this.userId);
     return new ResultAsync(
-      limit(async () => {
-        return await this.meetRepository
-          .getParticipantSessions(participantName, accessToken)
-          .map((res) => res.participantSessions);
-      }),
+      limit(() =>
+        this.meetRepository.getParticipantSessions(
+          participantName,
+          accessToken,
+        ),
+      ),
     );
   }
 
@@ -107,10 +108,10 @@ export class MeetService {
       .andThen(({ record, spaceCode }) => {
         return this.meetRepository
           .getParticipants(recordName, accessToken)
-          .map((res) => ({
+          .map((participants) => ({
             record,
             spaceCode,
-            participants: res.participants,
+            participants,
           }));
       })
       .andThen(({ record, spaceCode, participants }) => {
@@ -119,7 +120,7 @@ export class MeetService {
             this.meetRepository
               .getParticipantSessions(p.name, accessToken)
               .match(
-                (res) => res.participantSessions,
+                (sessions) => sessions,
                 () => [], // 一部のセッション取得失敗が全体の失敗にならないようにフォールバック
               ),
           ),

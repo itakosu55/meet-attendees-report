@@ -51,13 +51,7 @@ export interface IMeetRepository {
   getConferenceRecordsBySpace(
     spaceCode: string,
     accessToken: string,
-  ): ResultAsync<
-    {
-      conferenceRecords: ConferenceRecord[];
-      nextPageToken?: string;
-    },
-    MeetApiError
-  >;
+  ): ResultAsync<ConferenceRecord[], MeetApiError>;
 
   getConferenceRecord(
     recordName: string,
@@ -67,21 +61,12 @@ export interface IMeetRepository {
   getParticipants(
     recordName: string,
     accessToken: string,
-  ): ResultAsync<
-    { participants: Participant[]; nextPageToken?: string },
-    MeetApiError
-  >;
+  ): ResultAsync<Participant[], MeetApiError>;
 
   getParticipantSessions(
     participantName: string,
     accessToken: string,
-  ): ResultAsync<
-    {
-      participantSessions: ParticipantSession[];
-      nextPageToken?: string;
-    },
-    MeetApiError
-  >;
+  ): ResultAsync<ParticipantSession[], MeetApiError>;
 
   getSpace(
     spaceName: string,
