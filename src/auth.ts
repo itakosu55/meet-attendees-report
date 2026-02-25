@@ -79,14 +79,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           method: "POST",
         });
 
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(
+            `Token refresh failed: ${response.status} ${errorText}`,
+          );
+        }
+
         // tokens as unknown as { ... } 等で型を明示して TS2322 などの unknown 型エラーを回避
         const tokens = (await response.json()) as {
           access_token: string;
           expires_in: number;
           refresh_token?: string;
         };
-
-        if (!response.ok) throw tokens;
 
         return {
           ...token,
