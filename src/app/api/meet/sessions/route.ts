@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/infra/auth";
+import { AuthService } from "@/application/auth-service";
+import { NextAuthRepository } from "@/infra/next-auth-repo";
 import { MeetRepository } from "@/infra/meet-repo";
 import { MeetService } from "@/application/meet-service";
 
@@ -14,17 +15,21 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const user = await getCurrentUser();
-  if (!user || !user.googleAccessToken) {
+  const authRepository = new NextAuthRepository();
+  const authService = new AuthService(authRepository);
+  const resultSession = await authService.getCurrentSession();
+  const session = resultSession.isOk() ? resultSession.value : null;
+
+  if (!session || !session.googleAccessToken) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const meetRepo = new MeetRepository();
-  const meetService = new MeetService(meetRepo, user.uid);
+  const meetService = new MeetService(meetRepo, session.user.id);
 
   const result = await meetService.getParticipantSessions(
     participantName,
-    user.googleAccessToken,
+    session.googleAccessToken,
   );
 
   if (result.isErr()) {

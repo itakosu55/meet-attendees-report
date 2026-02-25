@@ -1,8 +1,8 @@
-import { getCurrentUser } from "@/infra/auth";
+import { AuthService } from "@/application/auth-service";
+import { NextAuthRepository } from "@/infra/next-auth-repo";
 import { LoginButton } from "@/components/login-button";
 import { SpaceForm } from "@/components/space-form";
-import { clearSessionCookie } from "@/app/actions/auth";
-import { redirect } from "next/navigation";
+import { signOut } from "@/auth";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,7 +13,12 @@ import {
 } from "@/components/ui/card";
 
 export default async function Home() {
-  const user = await getCurrentUser();
+  const authRepository = new NextAuthRepository();
+  const authService = new AuthService(authRepository);
+
+  const result = await authService.getCurrentSession();
+  const session = result.isOk() ? result.value : null;
+  const user = session?.user;
 
   if (!user) {
     return (
@@ -35,8 +40,7 @@ export default async function Home() {
 
   const handleLogout = async () => {
     "use server";
-    await clearSessionCookie();
-    redirect("/");
+    await signOut({ redirectTo: "/" });
   };
 
   return (

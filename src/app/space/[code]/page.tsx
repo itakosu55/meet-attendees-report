@@ -1,4 +1,5 @@
-import { getCurrentUser } from "@/infra/auth";
+import { AuthService } from "@/application/auth-service";
+import { NextAuthRepository } from "@/infra/next-auth-repo";
 import { MeetService } from "@/application/meet-service";
 import { MeetRepository } from "@/infra/meet-repo";
 import { redirect } from "next/navigation";
@@ -26,17 +27,20 @@ export default async function SpacePage({
   params: Promise<{ code: string }>;
 }) {
   const { code } = await params;
-  const user = await getCurrentUser();
+  const authRepository = new NextAuthRepository();
+  const authService = new AuthService(authRepository);
+  const resultSession = await authService.getCurrentSession();
+  const session = resultSession.isOk() ? resultSession.value : null;
 
-  if (!user || !user.googleAccessToken) {
+  if (!session || !session.googleAccessToken) {
     redirect("/");
   }
 
   const meetRepo = new MeetRepository();
-  const meetService = new MeetService(meetRepo, user.uid);
+  const meetService = new MeetService(meetRepo, session.user.id);
   const result = await meetService.getConferenceRecordsBySpace(
     code,
-    user.googleAccessToken,
+    session.googleAccessToken,
   );
 
   if (result.isErr()) {
