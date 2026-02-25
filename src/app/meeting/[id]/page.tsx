@@ -25,6 +25,10 @@ export default async function MeetingPage({
   const resultSession = await authService.getCurrentSession();
   const session = resultSession.isOk() ? resultSession.value : null;
 
+  // If access token refresh failed, force re-authentication
+  if (session && (session as any).error === "RefreshAccessTokenError") {
+    redirect("/");
+  }
   if (!session || !session.googleAccessToken) {
     redirect("/");
   }

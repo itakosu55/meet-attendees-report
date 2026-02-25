@@ -18,6 +18,11 @@ export default async function Home() {
 
   const result = await authService.getCurrentSession();
   const session = result.isOk() ? result.value : null;
+
+  if (session && (session as any).error === "RefreshAccessTokenError") {
+    await signOut({ redirectTo: "/" });
+    return null;
+  }
   const user = session?.user;
 
   if (!user) {

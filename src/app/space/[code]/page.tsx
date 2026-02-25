@@ -32,7 +32,7 @@ export default async function SpacePage({
   const resultSession = await authService.getCurrentSession();
   const session = resultSession.isOk() ? resultSession.value : null;
 
-  if (!session || !session.googleAccessToken) {
+  if (!session || session.error || !session.googleAccessToken) {
     redirect("/");
   }
 
