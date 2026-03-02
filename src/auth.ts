@@ -73,6 +73,7 @@ export function refreshAccessToken(token: JWT): ResultAsync<JWT, Error> {
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: process.env.AUTH_SECRET,
+  trustHost: true,
   providers: [
     Google({
       clientId: process.env.AUTH_GOOGLE_ID,
