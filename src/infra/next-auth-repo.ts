@@ -1,9 +1,6 @@
 import { IAuthRepository, AuthSession, AuthApiError } from "@/domain/auth";
 import { auth } from "@/auth";
 import { ResultAsync } from "neverthrow";
-import { getToken } from "next-auth/jwt";
-import { headers } from "next/headers";
-import { NextRequest } from "next/server";
 
 export class NextAuthRepository implements IAuthRepository {
   getCurrentSession(): ResultAsync<AuthSession | null, AuthApiError> {
@@ -18,19 +15,6 @@ export class NextAuthRepository implements IAuthRepository {
           throw new Error("Invalid session: missing user ID");
         }
 
-        const headersList = await headers();
-        // getToken requires a Request/NextRequest instance to read cookies.
-        // In Server Components, we only have access to headers().
-        // The URL is not actually used by getToken, so "http://localhost" is an intentional dummy value.
-        const req = new NextRequest("http://localhost", {
-          headers: headersList,
-        });
-
-        const token = await getToken({
-          req,
-          secret: process.env.AUTH_SECRET,
-        });
-
         return {
           user: {
             id: session.user.id,
@@ -38,8 +22,8 @@ export class NextAuthRepository implements IAuthRepository {
             email: session.user.email,
             picture: session.user.image,
           },
-          googleAccessToken: token?.accessToken as string | undefined,
-          error: token?.error as "RefreshAccessTokenError" | undefined,
+          googleAccessToken: session.accessToken,
+          error: session.error,
         } as AuthSession;
       })(),
       (error) =>

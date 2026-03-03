@@ -7,6 +7,10 @@ type RefreshErrorType = "RefreshAccessTokenError";
 // もしくは直接コールバック内のtoken引数にアサーションを使用する方法が一般的ですが、
 // ここでは NextAuth v5 (beta) で推奨の宣言を使用します
 declare module "next-auth" {
+  interface Session {
+    accessToken?: string;
+    error?: RefreshErrorType;
+  }
   interface JWT {
     accessToken?: string;
     refreshToken?: string;
@@ -127,6 +131,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         throw new Error("Invalid session: missing token.sub");
       }
       session.user.id = token.sub;
+      session.accessToken = token.accessToken as string | undefined;
+      session.error = token.error as RefreshErrorType | undefined;
       return session;
     },
   },
