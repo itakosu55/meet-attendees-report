@@ -11,7 +11,7 @@ export function LoginButton() {
   const handleLogin = async () => {
     setIsLoading(true);
     try {
-      await signIn("google", { callbackUrl: "/" });
+      await signIn("google");
     } catch (error) {
       console.error("Login error:", error);
     } finally {
