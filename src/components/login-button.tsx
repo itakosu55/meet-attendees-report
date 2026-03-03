@@ -11,7 +11,7 @@ export function LoginButton() {
   const handleLogin = async () => {
     setIsLoading(true);
     try {
-      await signIn("google", { redirectTo: `${window.location.origin}/` });
+      await signIn("google");
     } catch (error) {
       console.error("Login error:", error);
     } finally {
